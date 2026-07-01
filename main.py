@@ -20,24 +20,42 @@ class DynamicPersonaPlugin(Star):
     @filter.command("log")
     async def log_persona(self, event: AstrMessageEvent):
         """切换到插件配置页设置的 log 人格。"""
-        self._silence_command(event)
-        await self._switch_configured_persona(
+        switched = await self._switch_configured_persona(
             event,
             config_key="log_persona_id",
             command_name="log",
         )
+        if switched:
+            self._strip_command_prefix(event, "log")
+        else:
+            self._stop_without_response(event)
 
     @filter.command("info")
     async def info_persona(self, event: AstrMessageEvent):
         """切换到插件配置页设置的 info 人格。"""
-        self._silence_command(event)
-        await self._switch_configured_persona(
+        switched = await self._switch_configured_persona(
             event,
             config_key="info_persona_id",
             command_name="info",
         )
+        if switched:
+            self._strip_command_prefix(event, "info")
+        else:
+            self._stop_without_response(event)
 
-    def _silence_command(self, event: AstrMessageEvent) -> None:
+    def _strip_command_prefix(self, event: AstrMessageEvent, command_name: str) -> None:
+        prompt = event.get_message_str().strip()
+        prefixes = (f"/{command_name}", command_name)
+        for prefix in prefixes:
+            if prompt == prefix:
+                self._stop_without_response(event)
+                logger.info("/%s 未附带问题，仅切换人格。", command_name)
+                return
+            if prompt.startswith(f"{prefix} "):
+                event.message_str = prompt[len(prefix) :].strip()
+                return
+
+    def _stop_without_response(self, event: AstrMessageEvent) -> None:
         event.should_call_llm(False)
         event.stop_event()
         event.clear_result()
@@ -47,18 +65,19 @@ class DynamicPersonaPlugin(Star):
         event: AstrMessageEvent,
         config_key: str,
         command_name: str,
-    ) -> None:
+    ) -> bool:
         persona_id = str(self.config.get(config_key, "")).strip()
         if not persona_id:
             logger.warning("请先在插件配置页设置 /%s 对应的人格。", command_name)
-            return
+            return False
 
         if not self.context.persona_manager.get_persona_v3_by_id(persona_id):
             logger.warning("未找到 /%s 对应的人格：%s", command_name, persona_id)
-            return
+            return False
 
         await self._switch_conversation_persona(event, persona_id)
         logger.info("已切换到 /%s 人格：%s", command_name, persona_id)
+        return True
 
     async def _switch_conversation_persona(
         self,
