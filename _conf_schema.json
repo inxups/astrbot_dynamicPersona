@@ -1,12 +1,14 @@
 {
-  "log_persona": {
+  "log_persona_id": {
     "description": "/log 对应的人格",
     "type": "string",
-    "hint": "填写 /log 触发后要使用的人格提示词"
+    "hint": "选择 /log 触发后要切换到的人格",
+    "_special": "select_persona"
   },
-  "info_persona": {
+  "info_persona_id": {
     "description": "/info 对应的人格",
     "type": "string",
-    "hint": "填写 /info 触发后要使用的人格提示词"
+    "hint": "选择 /info 触发后要切换到的人格",
+    "_special": "select_persona"
   }
 }

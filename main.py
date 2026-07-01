@@ -21,10 +21,9 @@ class DynamicPersonaPlugin(Star):
     async def log_persona(self, event: AstrMessageEvent):
         """切换到插件配置页设置的 log 人格。"""
         yield event.plain_result(
-            await self._apply_persona(
+            await self._switch_configured_persona(
                 event,
-                persona_id="dynamic_persona_log",
-                config_key="log_persona",
+                config_key="log_persona_id",
                 command_name="log",
             )
         )
@@ -33,41 +32,28 @@ class DynamicPersonaPlugin(Star):
     async def info_persona(self, event: AstrMessageEvent):
         """切换到插件配置页设置的 info 人格。"""
         yield event.plain_result(
-            await self._apply_persona(
+            await self._switch_configured_persona(
                 event,
-                persona_id="dynamic_persona_info",
-                config_key="info_persona",
+                config_key="info_persona_id",
                 command_name="info",
             )
         )
 
-    async def _apply_persona(
+    async def _switch_configured_persona(
         self,
         event: AstrMessageEvent,
-        persona_id: str,
         config_key: str,
         command_name: str,
     ) -> str:
-        persona_prompt = str(self.config.get(config_key, "")).strip()
-        if not persona_prompt:
+        persona_id = str(self.config.get(config_key, "")).strip()
+        if not persona_id:
             return f"请先在插件配置页设置 /{command_name} 对应的人格。"
 
-        await self._upsert_persona(persona_id, persona_prompt)
-        await self._switch_conversation_persona(event, persona_id)
-        return f"已切换到 /{command_name} 人格。"
+        if not self.context.persona_manager.get_persona_v3_by_id(persona_id):
+            return f"未找到 /{command_name} 对应的人格：{persona_id}"
 
-    async def _upsert_persona(self, persona_id: str, persona_prompt: str) -> None:
-        persona_manager = self.context.persona_manager
-        try:
-            await persona_manager.update_persona(
-                persona_id,
-                system_prompt=persona_prompt,
-            )
-        except ValueError:
-            await persona_manager.create_persona(
-                persona_id,
-                system_prompt=persona_prompt,
-            )
+        await self._switch_conversation_persona(event, persona_id)
+        return f"已切换到 /{command_name} 人格：{persona_id}"
 
     async def _switch_conversation_persona(
         self,
