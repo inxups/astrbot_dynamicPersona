@@ -1,14 +1,12 @@
-# astrbot-plugin-helloworld
+# astrbot_plugin_dynamic_persona
 
-AstrBot 插件模板 / A template plugin for AstrBot plugin feature
+通过固定指令切换当前会话的人格，并在插件配置页维护对应人格内容。
 
-> [!NOTE]
-> This repo is just a template of [AstrBot](https://github.com/AstrBotDevs/AstrBot) Plugin.
-> 
-> [AstrBot](https://github.com/AstrBotDevs/AstrBot) is an agentic assistant for both personal and group conversations. It can be deployed across dozens of mainstream instant messaging platforms, including QQ, Telegram, Feishu, DingTalk, Slack, LINE, Discord, Matrix, etc. In addition, it provides a reliable and extensible conversational AI infrastructure for individuals, developers, and teams. Whether you need a personal AI companion, an intelligent customer support agent, an automation assistant, or an enterprise knowledge base, AstrBot enables you to quickly build AI applications directly within your existing messaging workflows.
+## 使用方式
 
-# Supports
+1. 在插件配置页填写：
+   - `log_persona`：`/log` 要使用的人格提示词
+   - `info_persona`：`/info` 要使用的人格提示词
+2. 在聊天中发送 `/log` 或 `/info`，插件会自动创建或更新对应人格，并把当前会话切换过去。
 
-- [AstrBot Repo](https://github.com/AstrBotDevs/AstrBot)
-- [AstrBot Plugin Development Docs (Chinese)](https://docs.astrbot.app/dev/star/plugin-new.html)
-- [AstrBot Plugin Development Docs (English)](https://docs.astrbot.app/en/dev/star/plugin-new.html)
+如果某个配置为空，触发对应指令时会提示先完成插件配置。

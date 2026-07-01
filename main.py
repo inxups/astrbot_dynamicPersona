@@ -1,24 +1,112 @@
-from astrbot.api.event import filter, AstrMessageEvent, MessageEventResult
+from astrbot.api import AstrBotConfig, logger
+from astrbot.api.event import AstrMessageEvent, filter
 from astrbot.api.star import Context, Star, register
-from astrbot.api import logger
 
-@register("helloworld", "YourName", "一个简单的 Hello World 插件", "1.0.0")
-class MyPlugin(Star):
-    def __init__(self, context: Context):
+
+@register(
+    "astrbot_plugin_dynamic_persona",
+    "inxups",
+    "通过 /log 和 /info 指令切换到插件配置页指定的人格",
+    "1.0.0",
+)
+class DynamicPersonaPlugin(Star):
+    def __init__(self, context: Context, config: AstrBotConfig):
         super().__init__(context)
+        self.config = config
 
     async def initialize(self):
-        """可选择实现异步的插件初始化方法，当实例化该插件类之后会自动调用该方法。"""
+        logger.info("dynamic persona plugin initialized")
 
-    # 注册指令的装饰器。指令名为 helloworld。注册成功后，发送 `/helloworld` 就会触发这个指令，并回复 `你好, {user_name}!`
-    @filter.command("helloworld")
-    async def helloworld(self, event: AstrMessageEvent):
-        """这是一个 hello world 指令""" # 这是 handler 的描述，将会被解析方便用户了解插件内容。建议填写。
-        user_name = event.get_sender_name()
-        message_str = event.message_str # 用户发的纯文本消息字符串
-        message_chain = event.get_messages() # 用户所发的消息的消息链 # from astrbot.api.message_components import *
-        logger.info(message_chain)
-        yield event.plain_result(f"Hello, {user_name}, 你发了 {message_str}!") # 发送一条纯文本消息
+    @filter.command("log")
+    async def log_persona(self, event: AstrMessageEvent):
+        """切换到插件配置页设置的 log 人格。"""
+        yield event.plain_result(
+            await self._apply_persona(
+                event,
+                persona_id="dynamic_persona_log",
+                config_key="log_persona",
+                command_name="log",
+            )
+        )
+
+    @filter.command("info")
+    async def info_persona(self, event: AstrMessageEvent):
+        """切换到插件配置页设置的 info 人格。"""
+        yield event.plain_result(
+            await self._apply_persona(
+                event,
+                persona_id="dynamic_persona_info",
+                config_key="info_persona",
+                command_name="info",
+            )
+        )
+
+    async def _apply_persona(
+        self,
+        event: AstrMessageEvent,
+        persona_id: str,
+        config_key: str,
+        command_name: str,
+    ) -> str:
+        persona_prompt = str(self.config.get(config_key, "")).strip()
+        if not persona_prompt:
+            return f"请先在插件配置页设置 /{command_name} 对应的人格。"
+
+        await self._upsert_persona(persona_id, persona_prompt)
+        await self._switch_conversation_persona(event, persona_id)
+        return f"已切换到 /{command_name} 人格。"
+
+    async def _upsert_persona(self, persona_id: str, persona_prompt: str) -> None:
+        persona_manager = self.context.persona_manager
+        try:
+            await persona_manager.update_persona(
+                persona_id,
+                system_prompt=persona_prompt,
+            )
+        except ValueError:
+            await persona_manager.create_persona(
+                persona_id,
+                system_prompt=persona_prompt,
+            )
+
+    async def _switch_conversation_persona(
+        self,
+        event: AstrMessageEvent,
+        persona_id: str,
+    ) -> None:
+        conversation_manager = self.context.conversation_manager
+        umo = event.unified_msg_origin
+        conversation_id = await conversation_manager.get_curr_conversation_id(umo)
+        if not conversation_id:
+            await conversation_manager.new_conversation(umo, persona_id=persona_id)
+        else:
+            await self._update_conversation_persona(
+                conversation_manager,
+                umo,
+                conversation_id,
+                persona_id,
+            )
+
+    async def _update_conversation_persona(
+        self,
+        conversation_manager,
+        umo: str,
+        conversation_id: str,
+        persona_id: str,
+    ) -> None:
+        if hasattr(conversation_manager, "update_conversation_persona_id"):
+            await conversation_manager.update_conversation_persona_id(
+                umo,
+                persona_id=persona_id,
+                conversation_id=conversation_id,
+            )
+            return
+
+        await conversation_manager.update_conversation(
+            unified_msg_origin=umo,
+            conversation_id=conversation_id,
+            persona_id=persona_id,
+        )
 
     async def terminate(self):
-        """可选择实现异步的插件销毁方法，当插件被卸载/停用时会调用。"""
+        logger.info("dynamic persona plugin terminated")

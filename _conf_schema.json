@@ -1,0 +1,12 @@
+{
+  "log_persona": {
+    "description": "/log 对应的人格",
+    "type": "string",
+    "hint": "填写 /log 触发后要使用的人格提示词"
+  },
+  "info_persona": {
+    "description": "/info 对应的人格",
+    "type": "string",
+    "hint": "填写 /info 触发后要使用的人格提示词"
+  }
+}
