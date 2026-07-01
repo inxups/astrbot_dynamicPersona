@@ -1,6 +1,6 @@
 name: astrbot_plugin_dynamic_persona
 display_name: Dynamic Persona
-desc: 通过 /log 和 /info 指令切换到插件配置页指定的人格。
+desc: 通过 /log 和 /info 指令使用插件配置页指定的人格回答单条问题。
 version: v1.0.0
 author: inxups
 repo: "https://github.com/inxups/astrbot_dynamicPersona"
