@@ -20,23 +20,19 @@ class DynamicPersonaPlugin(Star):
     @filter.command("log")
     async def log_persona(self, event: AstrMessageEvent):
         """切换到插件配置页设置的 log 人格。"""
-        yield event.plain_result(
-            await self._switch_configured_persona(
-                event,
-                config_key="log_persona_id",
-                command_name="log",
-            )
+        await self._switch_configured_persona(
+            event,
+            config_key="log_persona_id",
+            command_name="log",
         )
 
     @filter.command("info")
     async def info_persona(self, event: AstrMessageEvent):
         """切换到插件配置页设置的 info 人格。"""
-        yield event.plain_result(
-            await self._switch_configured_persona(
-                event,
-                config_key="info_persona_id",
-                command_name="info",
-            )
+        await self._switch_configured_persona(
+            event,
+            config_key="info_persona_id",
+            command_name="info",
         )
 
     async def _switch_configured_persona(
@@ -44,16 +40,18 @@ class DynamicPersonaPlugin(Star):
         event: AstrMessageEvent,
         config_key: str,
         command_name: str,
-    ) -> str:
+    ) -> None:
         persona_id = str(self.config.get(config_key, "")).strip()
         if not persona_id:
-            return f"请先在插件配置页设置 /{command_name} 对应的人格。"
+            logger.warning("请先在插件配置页设置 /%s 对应的人格。", command_name)
+            return
 
         if not self.context.persona_manager.get_persona_v3_by_id(persona_id):
-            return f"未找到 /{command_name} 对应的人格：{persona_id}"
+            logger.warning("未找到 /%s 对应的人格：%s", command_name, persona_id)
+            return
 
         await self._switch_conversation_persona(event, persona_id)
-        return f"已切换到 /{command_name} 人格：{persona_id}"
+        logger.info("已切换到 /%s 人格：%s", command_name, persona_id)
 
     async def _switch_conversation_persona(
         self,
