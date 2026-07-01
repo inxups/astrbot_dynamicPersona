@@ -20,8 +20,7 @@ class DynamicPersonaPlugin(Star):
     @filter.command("log")
     async def log_persona(self, event: AstrMessageEvent):
         """切换到插件配置页设置的 log 人格。"""
-        event.should_call_llm(False)
-        event.stop_event()
+        self._silence_command(event)
         await self._switch_configured_persona(
             event,
             config_key="log_persona_id",
@@ -31,13 +30,17 @@ class DynamicPersonaPlugin(Star):
     @filter.command("info")
     async def info_persona(self, event: AstrMessageEvent):
         """切换到插件配置页设置的 info 人格。"""
-        event.should_call_llm(False)
-        event.stop_event()
+        self._silence_command(event)
         await self._switch_configured_persona(
             event,
             config_key="info_persona_id",
             command_name="info",
         )
+
+    def _silence_command(self, event: AstrMessageEvent) -> None:
+        event.should_call_llm(False)
+        event.stop_event()
+        event.clear_result()
 
     async def _switch_configured_persona(
         self,
