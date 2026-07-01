@@ -1,5 +1,6 @@
 from astrbot.api import AstrBotConfig, logger
 from astrbot.api.event import AstrMessageEvent, filter
+from astrbot.api.event.filter import EventMessageType
 from astrbot.api.star import Context, Star, register
 
 
@@ -36,6 +37,22 @@ class DynamicPersonaPlugin(Star):
             command_name="info",
         ):
             yield result
+
+    @filter.event_message_type(EventMessageType.ALL)
+    async def fallback_reply(self, event: AstrMessageEvent):
+        """没有使用本插件指令时，回复配置的固定内容。"""
+        if not event.is_at_or_wake_command:
+            return
+        if self._is_command_message(event):
+            return
+
+        reply = str(self.config.get("fallback_reply", "")).strip()
+        if not reply:
+            return
+
+        event.should_call_llm(True)
+        event.stop_event()
+        yield event.plain_result(reply)
 
     async def _handle_persona_request(
         self,
@@ -89,6 +106,17 @@ class DynamicPersonaPlugin(Star):
     def _stop_without_response(self, event: AstrMessageEvent) -> None:
         event.stop_event()
         event.clear_result()
+
+    def _is_persona_command(self, event: AstrMessageEvent) -> bool:
+        message = event.get_message_str().strip()
+        return any(
+            message == command or message.startswith(f"{command} ")
+            for command in ("/log", "log", "/info", "info")
+        )
+
+    def _is_command_message(self, event: AstrMessageEvent) -> bool:
+        message = event.get_message_str().strip()
+        return message.startswith("/") or self._is_persona_command(event)
 
     async def terminate(self):
         logger.info("dynamic persona plugin terminated")

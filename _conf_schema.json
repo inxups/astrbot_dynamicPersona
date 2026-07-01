@@ -10,5 +10,10 @@
     "type": "string",
     "hint": "选择 /info 触发后要切换到的人格",
     "_special": "select_persona"
+  },
+  "fallback_reply": {
+    "description": "无指令时的固定回复",
+    "type": "text",
+    "hint": "普通聊天没有使用斜杠指令时，机器人回复的固定内容。留空则不启用。"
   }
 }
