@@ -3,4 +3,4 @@ display_name: Dynamic Persona
 desc: 通过 /log 和 /info 指令切换到插件配置页指定的人格。
 version: v1.0.0
 author: inxups
-repo: ""
+repo: "https://github.com/inxups/astrbot_dynamicPersona"
